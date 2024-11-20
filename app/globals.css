@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+  }
+}
+
+input {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+/* .compare-container:hover .compare {
+  filter: grayscale(100%);
+}
+
+.compare:hover {
+  filter: none !important;
+} */
+
+@keyframes slideInLeft {
+  0% {
+    transform: translateX(-100%); /* Start off-screen to the left */
+  }
+  100% {
+    transform: translateX(0); /* End at its normal position */
+  }
+}
+
+@keyframes slideInRight {
+  0% {
+    transform: translateX(100%); /* Start off-screen to the left */
+  }
+  100% {
+    transform: translateX(0); /* End at its normal position */
+  }
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.5s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.5s ease-out forwards;
+}
+
+.shadow-inner-image {
+  box-shadow: 10px 10px 69px 37px rgba(0, 0, 0, 0.84) inset;
+  -webkit-box-shadow: 10px 10px 69px 37px rgba(0, 0, 0, 0.84) inset;
+  -moz-box-shadow: 10px 10px 69px 37px rgba(0, 0, 0, 0.84) inset;
+}
+
+@keyframes hide {
+  from {
+    display: block;
+  }
+  to {
+    display: none;
+  }
+}
+
+.delayed-hide {
+  animation: hide 100ms forwards;
+  animation-delay: 400ms;
+}
+
+@keyframes slideIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideIn {
+  animation: slideIn 0.5s ease forwards;
+}
+
+.clip-ellipse {
+  clip-path: ellipse(51% 18% at 50% 50%);
+}
+
+.red-gradient {
+  background: radial-gradient(
+    at left top,
+    rgba(234, 194, 194, 0.9) 20%,
+    rgba(224, 169, 169, 0.9) 60%,
+    rgb(181, 92, 91) 100%
+  );
+}
+
+.green-gradient {
+  background: radial-gradient(
+    at left top,
+
+    rgba(199, 234, 204, 0.9) 20%,
+    rgba(178, 225, 184, 0.9) 60%,
+    rgb(142, 210, 134) 100%
+  );
+}
+
+/* Glowing Border Class */
+.glowing-border {
+  animation: glowing 200ms infinite alternate; /* Animated glowing effect */
+}
+
+/* Keyframes for Glowing Animation */
+@keyframes glowing {
+  0% {
+    box-shadow: 0 0 5px #000000, 0 0 8px #000000, 0 0 10px #000000,
+      0 0 12px #0000ff;
+  }
+  50% {
+    box-shadow: 0 0 5px #666666, 0 0 10px #666666, 0 0 15px #666666,
+      0 0 20px #3399ff;
+  }
+  100% {
+    box-shadow: 0 0 8px #888888, 0 0 12px #888888, 0 0 18px #888888,
+      0 0 25px #0066cc;
+  }
+}
