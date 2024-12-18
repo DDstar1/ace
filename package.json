@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@next/swc-wasm-nodejs": "^15.0.3",
+    "@next/swc-wasm-web": "^15.0.3",
     "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-slot": "^1.1.0",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
@@ -26,12 +28,14 @@
     "react-paystack": "^6.0.0",
     "react-toastify": "^10.0.6",
     "supabase": "^1.207.9",
-    "tailwind-merge": "^2.5.4",
+    "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
+    "three": "^0.152.2",
     "zustand": "^5.0.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",
+    "@types/three": "^0.170.0",
     "@xpd/tailwind-3dtransforms": "^1.0.3",
     "eslint": "^8",
     "eslint-config-next": "15.0.1",

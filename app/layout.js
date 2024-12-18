@@ -27,7 +27,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased relative max-w-[100vw] h-fit overflow-x-hidden`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased relative h-fit`}
       >
         {children}
         <ToastContainer autoClose={3000} hideProgressBar={false} />
