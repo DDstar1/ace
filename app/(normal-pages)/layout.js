@@ -7,10 +7,10 @@ export default function RootLayout({ children }) {
     <main className="max-w-screen overflow-x-hidden">
       <NavBar />
 
-      <Script
+      {/* <Script
         src="https://js.paystack.co/v1/inline.js"
         strategy="afterInteractive" // This ensures the script runs after the component is interactive
-      />
+      /> */}
       <Suspense>{children}</Suspense>
     </main>
   );
