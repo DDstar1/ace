@@ -13,6 +13,7 @@
     "@react-three/fiber": "^9.0.4",
     "@vercel/analytics": "^1.5.0",
     "@xpd/tailwind-3dtransforms": "^1.0.3",
+    "gsap": "^3.12.7",
     "next": "15.2.0",
     "postcss": "^8.5.3",
     "react": "^19.0.0",

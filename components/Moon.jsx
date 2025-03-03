@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import fragmentSphere from "./MoonUtils";
 
 const MoonScene = () => {
   const mountRef = useRef(null);
@@ -10,11 +11,18 @@ const MoonScene = () => {
   useEffect(() => {
     if (!mountRef.current) return;
 
-    let renderer, scene, camera, moon, controls;
+    let renderer,
+      scene,
+      camera,
+      moon,
+      sphere,
+      controls,
+      pieces = [];
+    let isFragmenting = true;
 
     // Set up scene
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000); // Black background
+    scene.background = new THREE.Color(0x000000);
 
     // Lighting setup
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -24,22 +32,17 @@ const MoonScene = () => {
     mainLight.position.set(5, 5, 5);
     scene.add(mainLight);
 
-    const secondaryLight = new THREE.DirectionalLight(0xffffff, 0.7);
-    secondaryLight.position.set(-5, 2, -5);
-    scene.add(secondaryLight);
-
     // Camera setup
     camera = new THREE.PerspectiveCamera(
       45,
       window.innerWidth / window.innerHeight
     );
-    camera.position.set(0, 0, 10);
+    camera.position.set(0, 5, 20);
     camera.lookAt(0, 0, 0);
 
     // Renderer setup
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.shadowMap.enabled = true;
     renderer.setPixelRatio(window.devicePixelRatio);
     mountRef.current.appendChild(renderer.domElement);
@@ -47,76 +50,103 @@ const MoonScene = () => {
     // OrbitControls setup
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.enableZoom = true;
-    controls.minDistance = 2;
-    controls.maxDistance = 100;
-    controls.enablePan = true;
-    controls.enableRotate = true;
-    controls.autoRotate = false;
 
-    // Add grid helper
-    const gridHelper = new THREE.GridHelper(20, 20, 0x888888, 0x444444);
+    // Grid and Axes Helpers
+    const gridHelper = new THREE.GridHelper(30, 30);
     scene.add(gridHelper);
 
-    // Add axes helper
     const axesHelper = new THREE.AxesHelper(5);
     scene.add(axesHelper);
 
     // Load the moon GLB model
     const loader = new GLTFLoader();
-    loader.load(
-      "/3d/Moon_1_3474.glb",
-      function (gltf) {
-        moon = gltf.scene;
+    loader.load("/3d/Moon_1_3474.glb", function (gltf) {
+      moon = gltf.scene;
 
-        // Ensure all materials are set up properly
-        moon.traverse((child) => {
-          if (child.isMesh) {
-            if (child.material) {
-              child.material.side = THREE.DoubleSide;
-              child.material.transparent = false;
-              child.material.needsUpdate = true;
+      moon.traverse((child) => {
+        if (child.isMesh) {
+          child.material.side = THREE.DoubleSide;
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
 
-              if (child.material.map) {
-                child.material.map.anisotropy =
-                  renderer.capabilities.getMaxAnisotropy();
-              }
+      // Scale and center the moon
+      const box = new THREE.Box3().setFromObject(moon);
+      const size = box.getSize(new THREE.Vector3());
+      const scaleFactor = 5 / Math.max(size.x, size.y, size.z);
+      moon.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
-              child.castShadow = true;
-              child.receiveShadow = true;
-            }
-          }
+      const center = box.getCenter(new THREE.Vector3());
+      moon.position.sub(center);
+      moon.position.set(-6, 0, 0); // Move it to the left
+
+      scene.add(moon);
+    });
+
+    // Create a sphere beside the moon
+    const sphereGeometry = new THREE.SphereGeometry(2, 32, 32);
+    const sphereMaterial = new THREE.MeshStandardMaterial({
+      color: 0xff0000,
+      emissive: 0xff3333,
+    });
+    sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    sphere.position.set(6, 0, 0); // Move it to the right
+    scene.add(sphere);
+
+    // Animate fragmentation and defragmentation
+    const toggleFragments = () => {
+      if (isFragmenting) {
+        // Fragment the sphere
+        pieces = fragmentSphere(sphere, 1000);
+        pieces.forEach((piece) => {
+          scene.add(piece);
+          // Move pieces outward
+          piece.userData.targetPosition = piece.position
+            .clone()
+            .add(
+              new THREE.Vector3(
+                (Math.random() - 0.5) * 3,
+                (Math.random() - 0.5) * 3,
+                (Math.random() - 0.5) * 3
+              )
+            );
+        });
+        scene.remove(sphere); // Hide original sphere
+      } else {
+        // Defragment: Move pieces back
+        pieces.forEach((piece) => {
+          piece.userData.targetPosition = new THREE.Vector3(6, 0, 0);
         });
 
-        // Properly scale the model
-        const box = new THREE.Box3().setFromObject(moon);
-        const size = box.getSize(new THREE.Vector3());
-        const scaleFactor = 5 / Math.max(size.x, size.y, size.z);
-        moon.scale.set(scaleFactor, scaleFactor, scaleFactor);
-
-        // Center the model
-        const center = box.getCenter(new THREE.Vector3());
-        moon.position.sub(center);
-
-        scene.add(moon);
-
-        console.log("Model loaded successfully");
-        console.log("Model size:", size);
-        console.log("Camera position:", camera.position);
-      },
-      (xhr) => {
-        console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-      },
-      (error) => {
-        console.error("An error occurred while loading the model:", error);
+        setTimeout(() => {
+          // Remove all fragments and restore sphere
+          pieces.forEach((piece) => scene.remove(piece));
+          pieces = [];
+          scene.add(sphere);
+        }, 2000);
       }
-    );
+
+      isFragmenting = !isFragmenting;
+    };
+
+    // Automatically toggle fragmentation every 5 seconds
+    setInterval(toggleFragments, 5000);
 
     // Animation loop
     const animate = () => {
       requestAnimationFrame(animate);
+
+      // Smooth movement of fragments
+      pieces.forEach((piece) => {
+        if (piece.userData.targetPosition) {
+          piece.position.lerp(piece.userData.targetPosition, 0.05);
+        }
+      });
+
       if (moon) moon.rotation.y += 0.001;
+      if (sphere) sphere.rotation.y += 0.005;
+
       controls.update();
       renderer.render(scene, camera);
     };
@@ -131,7 +161,6 @@ const MoonScene = () => {
     };
     window.addEventListener("resize", handleResize);
 
-    // Cleanup function
     return () => {
       window.removeEventListener("resize", handleResize);
       controls.dispose();
