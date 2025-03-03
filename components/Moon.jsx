@@ -98,7 +98,7 @@ const MoonScene = () => {
     const toggleFragments = () => {
       if (isFragmenting) {
         // Fragment the sphere
-        pieces = fragmentSphere(sphere, 1000);
+        pieces = fragmentSphere(sphere, 500);
         pieces.forEach((piece) => {
           scene.add(piece);
           // Move pieces outward
