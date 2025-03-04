@@ -29,9 +29,9 @@ const MoonScene = () => {
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    // // Add ambient light
-    // const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Color: white, Intensity: 0.5
-    // scene.add(ambientLight);
+    // Add ambient light
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.2); // Color: white, Intensity: 0.5
+    scene.add(ambientLight);
 
     // Add directional light
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
