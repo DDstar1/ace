@@ -1,9 +1,11 @@
 "use client";
-import { useEffect, useRef } from "react";
+
 import * as THREE from "three";
+import { useEffect, useRef } from "react";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import fragmentSphere from "./MoonUtils";
+import { loadModel } from "../lib/loadHeadModel";
+import { createSplitSphere } from "@/lib/brokenSphere";
+import { uniforms } from "../lib/shaders";
 
 const MoonScene = () => {
   const mountRef = useRef(null);
@@ -11,149 +13,59 @@ const MoonScene = () => {
   useEffect(() => {
     if (!mountRef.current) return;
 
-    let renderer,
-      scene,
-      camera,
-      moon,
-      sphere,
-      controls,
-      pieces = [];
-    let isFragmenting = true;
-
-    // Set up scene
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
-
-    // Lighting setup
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(ambientLight);
-
-    const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    mainLight.position.set(5, 5, 5);
-    scene.add(mainLight);
-
-    // Camera setup
-    camera = new THREE.PerspectiveCamera(
-      45,
-      window.innerWidth / window.innerHeight
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
     );
-    camera.position.set(0, 5, 20);
-    camera.lookAt(0, 0, 0);
+    camera.position.set(0, 1, 5);
 
-    // Renderer setup
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
-    renderer.setPixelRatio(window.devicePixelRatio);
     mountRef.current.appendChild(renderer.domElement);
 
-    // OrbitControls setup
-    controls = new OrbitControls(camera, renderer.domElement);
+    const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    // Grid and Axes Helpers
-    const gridHelper = new THREE.GridHelper(30, 30);
+    // // Add ambient light
+    // const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Color: white, Intensity: 0.5
+    // scene.add(ambientLight);
+
+    // Add directional light
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(5, 5, 5); // Light source position
+    scene.add(directionalLight);
+
+    // Add grid helper
+    const gridHelper = new THREE.GridHelper(10, 50);
+    gridHelper.position.y = -2; // Adjust the height of the grid
     scene.add(gridHelper);
 
-    const axesHelper = new THREE.AxesHelper(5);
-    scene.add(axesHelper);
+    // Load 3D model
+    loadModel(scene, new THREE.Vector3(1, 2, 3), 1.5);
+    createSplitSphere(scene, new THREE.Vector3(2, 1, 0), 1.5);
 
-    // Load the moon GLB model
-    const loader = new GLTFLoader();
-    loader.load("/3d/Moon_1_3474.glb", function (gltf) {
-      moon = gltf.scene;
-
-      moon.traverse((child) => {
-        if (child.isMesh) {
-          child.material.side = THREE.DoubleSide;
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-
-      // Scale and center the moon
-      const box = new THREE.Box3().setFromObject(moon);
-      const size = box.getSize(new THREE.Vector3());
-      const scaleFactor = 5 / Math.max(size.x, size.y, size.z);
-      moon.scale.set(scaleFactor, scaleFactor, scaleFactor);
-
-      const center = box.getCenter(new THREE.Vector3());
-      moon.position.sub(center);
-      moon.position.set(-6, 0, 0); // Move it to the left
-
-      scene.add(moon);
+    // Mouse movement tracking
+    const pointerPos = new THREE.Vector2();
+    window.addEventListener("mousemove", (evt) => {
+      pointerPos.set(
+        (evt.clientX / window.innerWidth) * 2 - 1,
+        -(evt.clientY / window.innerHeight) * 2 + 1
+      );
     });
-
-    // Create a sphere beside the moon
-    const sphereGeometry = new THREE.SphereGeometry(2, 32, 32);
-    const sphereMaterial = new THREE.MeshStandardMaterial({
-      color: 0xff0000,
-      emissive: 0xff3333,
-    });
-    sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-    sphere.position.set(6, 0, 0); // Move it to the right
-    scene.add(sphere);
-
-    // Animate fragmentation and defragmentation
-    const toggleFragments = () => {
-      if (isFragmenting) {
-        // Fragment the sphere
-        pieces = fragmentSphere(sphere, 500);
-        pieces.forEach((piece) => {
-          scene.add(piece);
-          // Move pieces outward
-          piece.userData.targetPosition = piece.position
-            .clone()
-            .add(
-              new THREE.Vector3(
-                (Math.random() - 0.5) * 3,
-                (Math.random() - 0.5) * 3,
-                (Math.random() - 0.5) * 3
-              )
-            );
-        });
-        scene.remove(sphere); // Hide original sphere
-      } else {
-        // Defragment: Move pieces back
-        pieces.forEach((piece) => {
-          piece.userData.targetPosition = new THREE.Vector3(6, 0, 0);
-        });
-
-        setTimeout(() => {
-          // Remove all fragments and restore sphere
-          pieces.forEach((piece) => scene.remove(piece));
-          pieces = [];
-          scene.add(sphere);
-        }, 2000);
-      }
-
-      isFragmenting = !isFragmenting;
-    };
-
-    // Automatically toggle fragmentation every 5 seconds
-    setInterval(toggleFragments, 5000);
 
     // Animation loop
     const animate = () => {
       requestAnimationFrame(animate);
-
-      // Smooth movement of fragments
-      pieces.forEach((piece) => {
-        if (piece.userData.targetPosition) {
-          piece.position.lerp(piece.userData.targetPosition, 0.05);
-        }
-      });
-
-      if (moon) moon.rotation.y += 0.001;
-      if (sphere) sphere.rotation.y += 0.005;
-
-      controls.update();
+      uniforms.mousePosition.value.copy(pointerPos);
       renderer.render(scene, camera);
+      controls.update();
     };
-
     animate();
 
-    // Handle window resize
+    // Resize handler
     const handleResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
@@ -162,14 +74,13 @@ const MoonScene = () => {
     window.addEventListener("resize", handleResize);
 
     return () => {
+      window.removeEventListener("mousemove", () => {});
       window.removeEventListener("resize", handleResize);
-      controls.dispose();
-      renderer.dispose();
-      if (mountRef.current) mountRef.current.removeChild(renderer.domElement);
+      mountRef.current.removeChild(renderer.domElement);
     };
   }, []);
 
-  return <div ref={mountRef} style={{ width: "100%", height: "100vh" }} />;
+  return <div ref={mountRef} style={{ width: "100vw", height: "100vh" }} />;
 };
 
 export default MoonScene;
